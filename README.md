@@ -2,6 +2,8 @@
 
 SyncForge is a local-first collaborative text editor built to keep edits safe through network loss, concurrent changes, and reconnects. It uses an operation-based CRDT so multiple clients can edit independently and still arrive at the same document without overwriting each other.
 
+[Live frontend demo](https://syncforge-ebon.vercel.app/) · [Protocol notes](docs/PROTOCOL.md) · [Testing record](docs/TESTING.md)
+
 ## What it does
 
 - Synchronizes edits between browser tabs through WebSockets.
@@ -91,4 +93,4 @@ docs/              Protocol and verification notes
 
 SyncForge is a portfolio-ready prototype. The collaborative workflow, offline queue, reconnect logic, and persistence layer are implemented. Authentication, document permissions, presence indicators, rich text, and CRDT history compaction are future work.
 
-The Vercel deployment serves the frontend and offline editor. Running realtime collaboration requires the Go WebSocket server and PostgreSQL database described above.
+The live Vercel demo serves the frontend and offline editor, so it intentionally displays an offline connection state. Running realtime collaboration requires the Go WebSocket server and PostgreSQL database described above.
