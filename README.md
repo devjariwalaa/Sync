@@ -2,7 +2,7 @@
 
 SyncForge is a local-first collaborative text editor built to keep edits safe through network loss, concurrent changes, and reconnects. It uses an operation-based CRDT so multiple clients can edit independently and still arrive at the same document without overwriting each other.
 
-[Live frontend demo](https://syncforge-ebon.vercel.app/) · [Protocol notes](docs/PROTOCOL.md) · [Testing record](docs/TESTING.md)
+[Live frontend demo](https://syncprojectum.vercel.app/) · [Protocol notes](docs/PROTOCOL.md) · [Testing record](docs/TESTING.md)
 
 ## What it does
 
