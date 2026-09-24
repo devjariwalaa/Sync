@@ -1,0 +1,30 @@
+{
+  "name": "syncforge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build && node scripts/sw.mjs",
+    "test:unit": "tsx --test tests/*.test.ts",
+    "test:go": "./scripts/go.sh test -race ./...",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:go && npm run build && npm run test:sync && npm run test:e2e",
+    "server": "./scripts/go.sh run ./cmd/server",
+    "db": "./scripts/go.sh run ./cmd/devdb",
+    "test:sync": "node scripts/integration.mjs",
+    "test:core": "tsx --test tests/core.test.ts tests/reference.test.ts",
+    "db:sandbox": "pglite-server --db=.tools/pglite --port=55433 --max-connections=100"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "fake-indexeddb": "^6.2.5",
+    "prettier": "^3.9.9",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}
