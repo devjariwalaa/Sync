@@ -83,6 +83,8 @@ nav a.active {
   color: #2c4837;
   font-weight: 600;
 }
+.new-document { width: 100%; margin-top: 8px; padding: 11px; border: 1px dashed #cbd6c4; border-radius: 6px; background: transparent; color: #687763; text-align: left; font-size: 11px; }
+.new-document:hover { background: #e7eddf; }
 .nav-dot {
   width: 6px;
   height: 6px;
@@ -139,6 +141,9 @@ header {
   align-items: center;
   gap: 24px;
 }
+.presence { display: flex; align-items: center; color: #7b887b; font-size: 10px; }
+.avatar { width: 27px; height: 27px; margin-left: -6px; border-radius: 50%; border: 2px solid #fbfcf9; background: #dfe8d5; color: #35513d; display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+.avatar:first-child { margin-left: 0; }
 .connection {
   font-size: 11px;
   display: inline-flex;
@@ -240,6 +245,14 @@ h1 span {
   align-items: center;
   height: 49px;
 }
+.format-tools { display: flex; gap: 5px; }
+.format-tools button { min-width: 30px; height: 30px; border: 0; border-radius: 5px; background: transparent; color: #53644f; font-size: 11px; }
+.format-tools button:hover, .format-tools button:focus-visible { background: #e7eddf; }
+.preview { min-height: 340px; height: 38vh; overflow: auto; padding: 30px 0 20px; color: #334333; font-size: 16px; line-height: 1.75; }
+.preview h1, .preview h2, .preview h3 { font-family: Manrope, system-ui; letter-spacing: -.5px; margin: .7em 0 .3em; }
+.preview h1 { font-size: 30px; }.preview h2 { font-size: 24px; }.preview h3 { font-size: 19px; }
+.preview p { margin: .55em 0; }.preview blockquote { border-left: 3px solid #9ab079; margin: 1em 0; padding-left: 16px; color: #667361; }
+.preview pre { background: #eef2e9; border-radius: 6px; padding: 15px; overflow: auto; }.preview code { background: #eef2e9; border-radius: 3px; padding: 2px 4px; }.preview a { color: #537446; text-decoration: underline; }
 .text-label {
   font-family: Georgia, serif;
   font-size: 17px;

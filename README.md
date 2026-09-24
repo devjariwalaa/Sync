@@ -11,6 +11,8 @@ SyncForge is a local-first collaborative text editor built to keep edits safe th
 - Replays queued operations after reconnecting and deduplicates retries.
 - Persists committed operations in PostgreSQL before acknowledging them.
 - Implements the CRDT independently in TypeScript and Go for differential testing.
+- Shows active collaborators and a safe Markdown preview while edits remain local-first.
+- Supports capability-protected private documents whose secret stays in the shared URL.
 
 ## Tech stack
 
@@ -91,6 +93,6 @@ docs/              Protocol and verification notes
 
 ## Current scope
 
-SyncForge is a portfolio-ready prototype. The collaborative workflow, offline queue, reconnect logic, and persistence layer are implemented. Authentication, document permissions, presence indicators, rich text, and CRDT history compaction are future work.
+SyncForge is a portfolio-ready application. The collaborative workflow, offline queue, reconnect logic, persistence layer, live presence, Markdown formatting, and private document links are implemented. User accounts and destructive CRDT history compaction are outside the current scope; retained immutable history is what lets devices reconnect safely after an unlimited offline period.
 
 The live Vercel demo serves the frontend and offline editor, so it intentionally displays an offline connection state. Running realtime collaboration requires the Go WebSocket server and PostgreSQL database described above.

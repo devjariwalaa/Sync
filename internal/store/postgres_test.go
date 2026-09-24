@@ -76,3 +76,21 @@ func TestConcurrentWritersAndCatchup(t *testing.T) {
 		}
 	}
 }
+
+func TestPrivateDocumentAuthorization(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	doc := fmt.Sprintf("private-%d", time.Now().UnixNano())
+	if err := s.CreatePrivate(ctx, doc, "a-very-long-secret-document-key"); err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]bool{"": false, "wrong": false, "a-very-long-secret-document-key": true} {
+		got, err := s.Authorized(ctx, doc, key)
+		if err != nil || got != want {
+			t.Fatalf("key %q: got %v, err %v", key, got, err)
+		}
+	}
+	if err := s.CreatePrivate(ctx, doc, "another-long-secret-document-key"); err == nil {
+		t.Fatal("duplicate document created")
+	}
+}

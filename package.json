@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build && node scripts/sw.mjs",
-    "test:unit": "tsx --test tests/*.test.ts",
+    "test:unit": "node --import tsx --test tests/*.test.ts",
     "test:go": "./scripts/go.sh test -race ./...",
     "test:e2e": "playwright test",
     "test": "npm run test:unit && npm run test:go && npm run build && npm run test:sync && npm run test:e2e",

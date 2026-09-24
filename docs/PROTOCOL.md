@@ -24,7 +24,7 @@ A disconnect at any stage is safe to retry. Lost ACKs cause duplicate delivery, 
 
 ## WebSocket messages
 
-Connect to `/ws?doc=NAME&after=CURSOR`.
+Connect to `/ws?doc=NAME&after=CURSOR&client=CLIENT&name=NAME&key=KEY`. The key is empty for public documents and required for capability-protected documents.
 
 Client: `{type:"push", ops:[...]}`.
 
@@ -34,10 +34,13 @@ Server:
 - `{type:"ready",cursor:N}`: catch-up has reached the current tail.
 - `{type:"ack",ids:[...],cursor:0}`: those IDs committed; this is **not** a catch-up cursor.
 - `{type:"error",error:"...",cursor:0}`: the batch was rejected and the outbox is retained.
+- `{type:"presence",users:[{client,name},...]}`: the currently connected collaborators for this server instance.
 
 Operation frames and their cursor are persisted atomically before the client advances its in-memory cursor. Acknowledgements do not advance cursors. Multiple tabs may share durable history; actor identities remain distinct. Cursor writes take the maximum within an IndexedDB transaction.
 
 The server queries committed operations every 100 ms, and immediately after append. This avoids a subscribe/catch-up gap and works across backend instances without process-local broadcasting. Per-document row locking aligns sequence order with commit order; an early sequence cannot commit after a later one and be skipped.
+
+Private documents are created with `POST /api/documents`. The server returns a random 192-bit capability key, stores only its SHA-256 digest, and requires the key during the WebSocket upgrade. Anyone with the complete private link can edit, so the link should be shared only with collaborators.
 
 ## Editor consistency
 

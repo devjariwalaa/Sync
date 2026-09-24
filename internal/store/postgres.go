@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"regexp"
@@ -17,12 +19,39 @@ var ErrConflict = errors.New("operation ID already has a different payload")
 var docPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,80}$`)
 
 func ValidDocument(id string) bool { return docPattern.MatchString(id) }
+func accessHash(key string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(key))) }
 
 type Entry struct {
 	Seq int64   `json:"seq"`
 	Op  crdt.Op `json:"op"`
 }
 type Store struct{ Pool *pgxpool.Pool }
+
+func (s *Store) CreatePrivate(ctx context.Context, doc, key string) error {
+	if !ValidDocument(doc) || len(key) < 20 {
+		return errors.New("invalid private document")
+	}
+	result, err := s.Pool.Exec(ctx, "INSERT INTO documents(id,access_hash) VALUES($1,$2) ON CONFLICT DO NOTHING", doc, accessHash(key))
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return errors.New("document already exists")
+	}
+	return nil
+}
+
+func (s *Store) Authorized(ctx context.Context, doc, key string) (bool, error) {
+	var hash string
+	err := s.Pool.QueryRow(ctx, "SELECT access_hash FROM documents WHERE id=$1", doc).Scan(&hash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return key == "", nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return hash == "" || (key != "" && hash == accessHash(key)), nil
+}
 
 func Open(ctx context.Context, url string) (*Store, error) {
 	p, e := pgxpool.New(ctx, url)

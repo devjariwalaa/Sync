@@ -30,7 +30,7 @@ func TestSocketCommitReplayAndIsolation(t *testing.T) {
 	defer srv.Close()
 	doc := fmt.Sprintf("ws-%d", time.Now().UnixNano())
 	dial := func(doc string, after int) *websocket.Conn {
-		c, _, e := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http")+fmt.Sprintf("/ws?doc=%s&after=%d", doc, after), nil)
+		c, _, e := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http")+fmt.Sprintf("/ws?doc=%s&after=%d&client=test-client&name=Test", doc, after), nil)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -86,4 +86,15 @@ func TestSocketCommitReplayAndIsolation(t *testing.T) {
 	read(bad, "ready")
 	wsjson.Write(ctx, bad, message{Type: "push", Ops: []crdt.Op{{ID: "1:a", Kind: "insert", Value: "z"}}})
 	read(bad, "error")
+}
+
+func TestIdentityValidation(t *testing.T) {
+	for _, tc := range []struct {
+		client, name string
+		valid        bool
+	}{{"abc", "Ada", true}, {"", "Ada", false}, {"bad id", "Ada", false}, {"abc", "", false}, {"abc", strings.Repeat("x", 41), false}} {
+		if got := validIdentity(tc.client, tc.name); got != tc.valid {
+			t.Fatalf("validIdentity(%q,%q)=%v", tc.client, tc.name, got)
+		}
+	}
 }

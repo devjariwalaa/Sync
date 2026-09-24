@@ -6,9 +6,15 @@ export type Status = {
   cursor: number;
   error?: string;
 };
-type Callbacks = { change: () => void; status: (s: Status) => void };
+export type Collaborator = { client: string; name: string };
+type Callbacks = {
+  change: () => void;
+  status: (s: Status) => void;
+  presence?: (users: Collaborator[]) => void;
+};
 export class SyncClient {
-  readonly crdt = new CRDT(crypto.randomUUID());
+  readonly clientId = crypto.randomUUID();
+  readonly crdt = new CRDT(this.clientId);
   private stopped = false;
   private online = () => this.connect();
   private offline = () => this.disconnect();
@@ -27,10 +33,16 @@ export class SyncClient {
   private connection: Status["connection"] = "connecting";
   private error?: string;
   private manuallyOffline = false;
-  constructor(
-    readonly doc: string,
-    private callbacks: Callbacks,
-  ) {}
+  constructor(readonly doc: string, private callbacks: Callbacks, private key = "") {}
+  private displayName() {
+    const storage = globalThis.localStorage;
+    let name = storage?.getItem("syncforge-name");
+    if (!name) {
+      name = `Guest ${this.clientId.slice(0, 4).toUpperCase()}`;
+      storage?.setItem("syncforge-name", name);
+    }
+    return name.slice(0, 40);
+  }
   async start() {
     this.storage = await LocalStore.open();
     const state = await this.storage.load(this.doc);
@@ -123,7 +135,7 @@ export class SyncClient {
     this.notify();
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(
-      `${scheme}//${location.host}/ws?doc=${encodeURIComponent(this.doc)}&after=${this.cursor}`,
+      `${scheme}//${location.host}/ws?doc=${encodeURIComponent(this.doc)}&after=${this.cursor}&client=${encodeURIComponent(this.clientId)}&name=${encodeURIComponent(this.displayName())}&key=${encodeURIComponent(this.key)}`,
     );
     this.ws = ws;
     this.ready = false;
@@ -151,6 +163,8 @@ export class SyncClient {
           this.ready = true;
           this.retry = 0;
           this.connection = "online";
+        } else if (m.type === "presence") {
+          this.callbacks.presence?.(m.users);
         } else if (m.type === "error") {
           throw Error(m.error);
         }

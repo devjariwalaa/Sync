@@ -1,13 +1,15 @@
 # Verification record
 
+The completion pass also covers safe Markdown rendering, collaborator identity validation, private-document authorization, and a manual two-tab presence, formatting, offline-concurrency, and reconnect acceptance run in Chrome.
+
 This report distinguishes passing checks from checks blocked by the desktop execution environment.
 
 ## Passed
 
-- TypeScript unit suite: 6 tests, including 200 seeded three-replica partition/reorder/duplicate/concurrent-edit histories.
+- TypeScript unit suite: 8 tests, including 200 seeded three-replica partition/reorder/duplicate/concurrent-edit histories and safe Markdown rendering.
 - Independent Go differential comparison: 100 additional randomized TypeScript histories replayed in reverse delivery order by the Go reference.
 - Go CRDT: 500 permutations, atomic conflict rejection, and a 20,000-node chain (iterative traversal).
-- Go PostgreSQL store tests with `-race`: durable reread, idempotence, conflicting-batch rollback, and 50 concurrent writers with contiguous committed sequence numbers.
+- Go PostgreSQL store tests with `-race`: durable reread, idempotence, conflicting-batch rollback, private-document authorization, and 50 concurrent writers with contiguous committed sequence numbers.
 - Go WebSocket test with `-race`: commit-before-ACK, broadcast/catch-up, reconnect replay, duplicates, conflicts and document isolation.
 - Four real-WebSocket TypeScript client integration tests: offline durable reload/concurrency; IME composition; 1200+ operations and deletion versus concurrent insertion; full Unicode including escaped NUL.
 - Strict TypeScript checking and production build.
@@ -16,6 +18,7 @@ This report distinguishes passing checks from checks blocked by the desktop exec
 - Final two-tab Chrome acceptance also passed: `Together` plus concurrent ` ONLINE` and ` OFFLINE` became exactly `Together ONLINE OFFLINE` in both tabs, with both reporting all changes synced.
 - Connected browser deletion acceptance: `abc`; offline deletion of `b` versus online insertion of `X` after `b`; both converge to `aXc`.
 - Real Chrome outage/reload: stopped the Go server, edited the document, reloaded Chrome from the service-worker cache, retained the exact text and 16 pending operations; after server restart it returned to “All changes synced” without losing text.
+- Completion Chrome acceptance: two collaborator avatars appeared; one tab edited offline while the other edited online; reconnect produced the same 80-character document in both tabs with no pending edits; Markdown preview rendered the synchronized heading and bold text.
 
 The database-dependent passing tests above used the persistent PGlite PostgreSQL engine over TCP, with the same Go store and WebSocket implementation. They are not a substitute for native PostgreSQL concurrent-session verification.
 
