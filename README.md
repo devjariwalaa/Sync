@@ -14,6 +14,14 @@ SyncForge is a local-first collaborative text editor built to keep edits safe th
 - Shows active collaborators and a safe Markdown preview while edits remain local-first.
 - Supports capability-protected private documents whose secret stays in the shared URL.
 
+## Using the editor
+
+Select text and click **B** or *I* (or use Ctrl/Cmd+B or Ctrl/Cmd+I). The editor keeps Markdown markers visible; the live formatted preview below shows the styled result immediately. Click the same button again to remove formatting. With no selection, the caret stays between the markers so you can type formatted text.
+
+To collaborate, both people must open the full document link on a publicly reachable Go server and see **Live sync**. Open and load the document while online first. Either person can then go offline, edit in the same browser, and reconnect to merge changes. Wait for **All changes synced** to confirm delivery. A `localhost` link works only on your own computer.
+
+**The Vercel frontend alone cannot share edits between people.** It currently stores edits on each device; the Go server and PostgreSQL must be hosted and connected before public collaboration works. Sharing and private-document creation are unavailable without a live connection.
+
 ## Tech stack
 
 TypeScript, Vite, IndexedDB, Service Workers, Go, PostgreSQL, WebSockets, Playwright, and Node's test runner.

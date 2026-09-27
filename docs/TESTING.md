@@ -57,3 +57,12 @@ npm test
 ```
 
 Do not set the sandbox `DATABASE_URL` if validating native PostgreSQL. The tests start an isolated Go backend on port 8087. Chrome must be installed. All five browser cases should execute their assertions; a browser-launch failure is not a passing acceptance test.
+
+## Formatting and sharing correction — September 26, 2026
+
+- Fixed formatting selection, empty-selection caret placement, toggle-off behavior, live preview updates, and hidden-panel CSS.
+- Added three formatting unit tests and a browser regression scenario for the toolbar.
+- All 11 unit tests, Go race tests (PGlite), four WebSocket integration tests, and production build passed.
+- All six browser scenarios were blocked before execution by sandboxed Chrome launch failures; this run does not claim a passing browser acceptance test.
+- Integration runner now passes its selected server URL to the client tests, avoiding the previous 8087/8080 mismatch.
+- Public cross-device collaboration remains unavailable on the frontend-only Vercel deployment. The UI and README now explain this limitation and do not offer link copying without a live connection.

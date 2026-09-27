@@ -25,7 +25,7 @@ try {
   const runner = spawn(
     "node_modules/.bin/tsx",
     ["--test", "tests/integration/client.test.ts"],
-    { stdio: "inherit", env: process.env },
+    { stdio: "inherit", env: { ...process.env, TEST_BASE_URL: base } },
   );
   const code = await new Promise((resolve) => runner.on("exit", resolve));
   process.exitCode = code ?? 1;

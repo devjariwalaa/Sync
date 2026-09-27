@@ -198,3 +198,23 @@ test("IME composition concurrent with remote insertion preserves both edits", as
   await expect.poll(() => content(b).inputValue()).toContain("remote");
   await same(page, b);
 });
+
+test("format buttons show live bold and italic, retain selection, and toggle", async ({
+  page,
+}) => {
+  await open(page, name());
+  await content(page).fill("format me");
+  await content(page).focus();
+  await content(page).press("ControlOrMeta+a");
+  await page.getByRole("button", { name: "Bold", exact: true }).click();
+  await expect(content(page)).toHaveValue("**format me**");
+  await expect(page.locator("#preview strong")).toHaveText("format me");
+  await page.getByRole("button", { name: "Bold", exact: true }).click();
+  await expect(content(page)).toHaveValue("format me");
+  await page.getByRole("button", { name: "Italic", exact: true }).click();
+  await expect(page.locator("#preview em")).toHaveText("format me");
+  await expect(content(page)).toBeVisible();
+  await page.getByRole("button", { name: "Hide preview" }).click();
+  await expect(page.locator("#preview")).toBeHidden();
+  await expect(content(page)).toBeVisible();
+});

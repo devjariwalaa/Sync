@@ -1,4 +1,5 @@
 import { SyncClient, type Collaborator, type Status } from "./client/sync";
+import { formatSelection } from "./client/formatting";
 import { renderMarkdown } from "./client/markdown";
 import "./style.css";
 const query = new URLSearchParams(location.search);
@@ -12,17 +13,20 @@ if (!/^[a-zA-Z0-9_-]{1,80}$/.test(doc)) {
 document.querySelector("#app")!.innerHTML = `
 <aside class="sidebar"><a class="brand" href="/"> <span class="brandmark">S<span>↗</span></span> SyncForge</a><div class="workspace">PERSONAL WORKSPACE <span>⌘</span></div><nav><a class="active" href="?doc=${doc}"><span>▤</span> Shared notebook <span class="nav-dot"></span></a><button id="new-private" class="new-document">＋ Private document</button></nav><div class="sidebar-bottom"><div class="local-icon">↔</div><strong>Your ideas travel with you.</strong><p>Keep writing, even offline.<br>We’ll bring everything together.</p><span class="build-tag">LOCAL-FIRST · V1.0</span></div></aside>
 <main><header><div class="breadcrumb">Workspace <span>/</span> Shared notebook</div><div class="header-right"><div id="presence" class="presence" aria-label="Active collaborators"></div><span id="connection" class="connection">Connecting</span><button id="share" class="button">Copy document link <span>↗</span></button></div></header>
-<div class="document-shell"><div class="eyebrow"><span class="tiny-square"></span> A SHARED SPACE FOR IDEAS</div><div class="title-row"><h1>Shared notebook<span>.</span></h1><span class="doc-symbol">✳</span></div><div class="document-meta"><span id="document-id"></span><span class="separator">·</span><span>Plain text, endless possibilities</span></div>
-<div class="toolbar"><div class="format-tools"><button type="button" data-wrap="**" aria-label="Bold"><b>B</b></button><button type="button" data-wrap="_" aria-label="Italic"><i>I</i></button><button type="button" data-prefix="# " aria-label="Heading">H</button><button id="preview-toggle" type="button">Preview</button></div><div class="toolbar-right"><span id="saved" role="status">Opening local notebook…</span><span class="lock">◇</span></div></div>
+<div class="document-shell"><div class="eyebrow"><span class="tiny-square"></span> A SHARED SPACE FOR IDEAS</div><div class="title-row"><h1>Shared notebook<span>.</span></h1><span class="doc-symbol">✳</span></div><div class="document-meta"><span id="document-id"></span><span class="separator">·</span><span>Write with Markdown • See formatting below</span></div>
+<div class="toolbar"><div class="format-tools"><button type="button" data-wrap="**" aria-label="Bold"><b>B</b></button><button type="button" data-wrap="_" aria-label="Italic"><i>I</i></button><button type="button" data-prefix="# " aria-label="Heading">H</button><button id="preview-toggle" type="button">Hide preview</button></div><div class="toolbar-right"><span id="saved" role="status">Opening local notebook…</span><span class="lock">◇</span></div></div>
 <label class="sr-only" for="editor">Document content</label><textarea id="editor" spellcheck="false" placeholder="Start with a thought. Build on it together.\n\nOpen this document in another tab to write side by side." disabled></textarea>
-<article id="preview" class="preview" hidden></article>
+<p class="format-help">Select words, then choose <b>B</b> or <i>I</i>. With no selection, type inside the added markers. Your formatted text appears below as you write.</p><section class="preview-panel"><h2>Formatted preview</h2><article id="preview" class="preview"></article></section>
 <footer class="editor-footer"><span><span id="words">0 words</span><span class="separator">·</span><span id="characters">0 characters</span></span><span>MADE FOR WORKING TOGETHER</span></footer>
-<div class="sync-card"><div class="sync-icon">⇄</div><div class="sync-copy"><strong id="sync-title">Everything, in sync.</strong><p id="sync-detail">Edits are saved on this device and shared when connected.</p></div><button id="toggle" class="button secondary">Go offline <span>↗</span></button></div><p class="hint">Try it out: open this link in two tabs. Go offline in one, edit in both, then reconnect.</p><div id="error" role="alert" hidden></div></div></main>`;
+<div class="sync-card"><div class="sync-icon">⇄</div><div class="sync-copy"><strong id="sync-title">Everything, in sync.</strong><p id="sync-detail">Edits are saved on this device and shared when connected.</p></div><button id="toggle" class="button secondary">Go offline <span>↗</span></button></div><details class="usage"><summary>How sharing and offline editing work</summary><ol><li>Sharing works when both people see <strong>Live sync</strong> on a publicly hosted server. A localhost link only works on your own computer.</li><li>Copy the full document link, including its private key if present. Ask your collaborator to open it while online and wait for the document to load.</li><li>Either person can then go offline and keep writing. Changes stay in that browser on that device.</li><li>Reconnect to the same server to merge everyone’s edits automatically. Wait for <strong>All changes synced</strong> before assuming others have received them.</li></ol><p>The Vercel frontend demo has no sync server: sending its link does not send your text. Do not clear browser data while you have unsynced changes.</p></details><div id="error" role="alert" hidden></div></div></main>`;
+document.querySelector<HTMLAnchorElement>("nav a.active")!.href = location.href;
 document.querySelector("#document-id")!.textContent = `Document / ${doc}`;
 const editor = document.querySelector<HTMLTextAreaElement>("#editor")!;
 const toggle = document.querySelector<HTMLButtonElement>("#toggle")!;
 const preview = document.querySelector<HTMLElement>("#preview")!;
-const previewToggle = document.querySelector<HTMLButtonElement>("#preview-toggle")!;
+let liveConnection = false;
+const previewToggle =
+  document.querySelector<HTMLButtonElement>("#preview-toggle")!;
 let rendered: { id: string; value: string }[] = [];
 let composing = false;
 let deferred = false;
@@ -33,7 +37,9 @@ function counts() {
   document.querySelector("#characters")!.textContent =
     `${[...text].length} characters`;
 }
-function updatePreview() { preview.innerHTML = renderMarkdown(editor.value); }
+function updatePreview() {
+  preview.innerHTML = renderMarkdown(editor.value);
+}
 function showPresence(users: Collaborator[]) {
   const holder = document.querySelector("#presence")!;
   holder.innerHTML = "";
@@ -41,7 +47,8 @@ function showPresence(users: Collaborator[]) {
     const avatar = document.createElement("span");
     avatar.className = "avatar";
     avatar.textContent = user.name.trim().slice(0, 1).toUpperCase() || "?";
-    avatar.title = user.client === client.clientId ? `${user.name} (you)` : user.name;
+    avatar.title =
+      user.client === client.clientId ? `${user.name} (you)` : user.name;
     holder.append(avatar);
   }
   if (users.length > 4) holder.append(`+${users.length - 4}`);
@@ -80,6 +87,9 @@ function render() {
   updatePreview();
 }
 function status(s: Status) {
+  liveConnection = s.connection === "online";
+  document.querySelector<HTMLButtonElement>("#new-private")!.disabled =
+    !liveConnection;
   const badge = document.querySelector("#connection")!;
   badge.textContent =
     s.connection === "online"
@@ -98,10 +108,10 @@ function status(s: Status) {
   document.querySelector("#sync-title")!.textContent =
     s.connection === "online"
       ? "Everything, in sync."
-      : "Your ideas don’t need a connection.";
-  document.querySelector("#sync-detail")!.textContent = s.pending
-    ? "Your pending edits will sync automatically when connected."
-    : "Edits are saved on this device and shared when connected.";
+      : "Changes are staying on this device.";
+  document.querySelector("#sync-detail")!.textContent = liveConnection
+    ? "Share this document’s full link with someone who can reach this server. Offline edits merge after reconnecting."
+    : "No live connection: other people cannot receive your edits right now. The Vercel demo needs a hosted sync server to share documents.";
   toggle.textContent = client.isOffline() ? "Reconnect ↗" : "Go offline ↗";
   if (s.error) {
     const box = document.querySelector<HTMLElement>("#error")!;
@@ -110,31 +120,57 @@ function status(s: Status) {
     editor.disabled = true;
   }
 }
-const client = new SyncClient(doc, { change: render, status, presence: showPresence }, accessKey);
+const client = new SyncClient(
+  doc,
+  { change: render, status, presence: showPresence },
+  accessKey,
+);
 function edit() {
   try {
     client.edit(editor.value);
     rendered = client.crdt.visible();
     counts();
+    updatePreview();
   } catch (e) {
     document.querySelector<HTMLElement>("#error")!.hidden = false;
     document.querySelector("#error")!.textContent = String(e);
   }
 }
-document.querySelectorAll<HTMLButtonElement>("[data-wrap], [data-prefix]").forEach((button) =>
-  button.addEventListener("click", () => {
-    const start = editor.selectionStart, end = editor.selectionEnd;
-    const wrap = button.dataset.wrap;
-    const prefix = button.dataset.prefix;
-    editor.setRangeText(wrap ? `${wrap}${editor.value.slice(start, end)}${wrap}` : `${prefix}${editor.value.slice(start, end)}`, start, end, "end");
-    edit(); editor.focus();
-  }),
-);
+function applyFormat(marker: string, heading = false) {
+  if (editor.disabled || composing) return;
+  const result = formatSelection(
+    editor.value,
+    editor.selectionStart,
+    editor.selectionEnd,
+    marker,
+    heading,
+  );
+  editor.value = result.text;
+  editor.focus();
+  editor.setSelectionRange(result.start, result.end);
+  edit();
+}
+document
+  .querySelectorAll<HTMLButtonElement>("[data-wrap], [data-prefix]")
+  .forEach((button) => {
+    button.addEventListener("mousedown", (event) => event.preventDefault());
+    button.addEventListener("click", () =>
+      applyFormat(button.dataset.wrap ?? "# ", !!button.dataset.prefix),
+    );
+  });
+editor.addEventListener("keydown", (event) => {
+  if (
+    (event.metaKey || event.ctrlKey) &&
+    ["b", "i"].includes(event.key.toLowerCase())
+  ) {
+    event.preventDefault();
+    applyFormat(event.key.toLowerCase() === "b" ? "**" : "_");
+  }
+});
 previewToggle.addEventListener("click", () => {
-  const showing = preview.hidden;
-  preview.hidden = !showing; editor.hidden = showing;
-  previewToggle.textContent = showing ? "Edit" : "Preview";
-  if (showing) updatePreview();
+  const panel = document.querySelector<HTMLElement>(".preview-panel")!;
+  panel.hidden = !panel.hidden;
+  previewToggle.textContent = panel.hidden ? "Show preview" : "Hide preview";
 });
 editor.addEventListener("input", () => {
   if (!composing) edit();
@@ -154,6 +190,17 @@ editor.addEventListener("compositionend", () => {
 });
 toggle.addEventListener("click", () => client.setOffline(!client.isOffline()));
 document.querySelector("#share")!.addEventListener("click", async () => {
+  if (!liveConnection) {
+    alert(
+      "Sharing is unavailable until Live sync appears. This page’s edits currently stay on your device; copying its link will not send your text.",
+    );
+    return;
+  }
+  if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) {
+    alert(
+      "This is a local link. It works in another tab on this computer, but someone on a different device cannot use it. A public sync server is needed for that.",
+    );
+  }
   try {
     await navigator.clipboard.writeText(location.href);
     document.querySelector("#share")!.textContent = "Link copied ✓";
@@ -162,11 +209,24 @@ document.querySelector("#share")!.addEventListener("click", async () => {
   }
 });
 document.querySelector("#new-private")!.addEventListener("click", async () => {
-  const id = prompt("Name your private document", `notes-${crypto.randomUUID().slice(0, 6)}`)?.trim();
+  const id = prompt(
+    "Name your private document",
+    `notes-${crypto.randomUUID().slice(0, 6)}`,
+  )?.trim();
   if (!id) return;
-  if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) { alert("Use letters, numbers, underscores, or hyphens."); return; }
-  const response = await fetch("/api/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-  if (!response.ok) { alert(await response.text()); return; }
+  if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) {
+    alert("Use letters, numbers, underscores, or hyphens.");
+    return;
+  }
+  const response = await fetch("/api/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) {
+    alert(await response.text());
+    return;
+  }
   const created = await response.json();
   location.href = `/?doc=${encodeURIComponent(created.id)}&key=${encodeURIComponent(created.key)}`;
 });
