@@ -26,7 +26,11 @@ func main() {
 	defer db.Pool.Close()
 	addr := os.Getenv("ADDR")
 	if addr == "" {
-		addr = "127.0.0.1:8080"
+		if port := os.Getenv("PORT"); port != "" {
+			addr = "0.0.0.0:" + port
+		} else {
+			addr = "127.0.0.1:8080"
+		}
 	}
 	handler := (&server.Server{Store: db, AllowedOrigins: []string{"127.0.0.1:5173", "localhost:5173"}}).Handler()
 	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second}

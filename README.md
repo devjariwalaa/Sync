@@ -104,3 +104,11 @@ docs/              Protocol and verification notes
 SyncForge is a portfolio-ready application. The collaborative workflow, offline queue, reconnect logic, persistence layer, live presence, Markdown formatting, and private document links are implemented. User accounts and destructive CRDT history compaction are outside the current scope; retained immutable history is what lets devices reconnect safely after an unlimited offline period.
 
 The live Vercel demo serves the frontend and offline editor, so it intentionally displays an offline connection state. Running realtime collaboration requires the Go WebSocket server and PostgreSQL database described above.
+
+## Free Render + Neon deployment
+
+Use a Render **Free** web service with the Docker runtime and this public repository. The included Dockerfile builds both the frontend and Go backend, so the Render URL serves the whole application with same-origin WebSockets. Render supplies `PORT`; the server binds to it on all interfaces.
+
+Create a **Free** Neon PostgreSQL project and put its TLS connection string in Render's secret `DATABASE_URL` environment variable. Never commit that value. Set Render's health check path to `/health`. No paid instance or persistent disk is required. Idle free services can take time to wake; wait for Live sync before sharing edits. Free provider quotas still apply.
+
+Use the resulting Render URL for collaboration. The existing Vercel URL stays frontend-only until it is redirected or configured to reach the new service. Public-repository deployments without a Git provider connection require manual redeployment when the repository changes.
